@@ -842,7 +842,7 @@ function SpeedTypingScreen({ onBack }: { onBack: () => void }) {
               {isCorrect ? <Check size={13} color="white" /> : <X size={13} color="white" />}
             </div>
             <span className="text-sm font-bold" style={{ color: isCorrect ? "#4CAF50" : "#F44336" }}>
-              {isCorrect ? "Correct! Great typing!" : "Not quite — check the answer above."}
+              {isCorrect ? "Correct! Great typing!" : "Not quite. Check the answer above."}
             </span>
           </div>
         )}
