@@ -1100,7 +1100,7 @@ export default function App() {
   return (
     <div
       className="flex items-center justify-center"
-      style={{ minHeight: "100vh", minWidth: "100vw", background: "#d0d8e8", padding: "24px 16px" }}
+      style={{ minHeight: "100vh", minWidth: "100vw", background: "#ffffff", padding: "24px 16px" }}
     >
       {/* Phone shell */}
       <div
