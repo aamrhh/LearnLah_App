@@ -515,11 +515,36 @@ function ConfirmBar({ state, isCorrect, onConfirm, onNext, correct }: {
 // ── WordBuilderScreen ──────────────────────────────────────────────────────
 
 const WORD_BUILDER_QS = [
-  { q: "Which word means 'hello' in Malay?", options: ["Helo", "Selamat", "Baik", "Makan"], correct: "Helo" },
-  { q: "Which word means 'thank you'?", options: ["Maaf", "Tolong", "Terima kasih", "Sama-sama"], correct: "Terima kasih" },
-  { q: "What does 'makan' mean?", options: ["Sleep", "Eat", "Drink", "Walk"], correct: "Eat" },
-  { q: "Which word means 'water'?", options: ["Api", "Angin", "Air", "Bumi"], correct: "Air" },
-  { q: "What does 'rumah' mean?", options: ["School", "Market", "Hospital", "House"], correct: "House" },
+  {
+    sentence: "Ali menggunakan ________ untuk membersihkan rumah.",
+    translation: "Ali uses ________ to clean the house.",
+    options: ["penyapu", "pemadam", "pembaris", "mangkuk"],
+    correct: "penyapu",
+  },
+  {
+    sentence: "Ibu memasak ________ untuk makan malam.",
+    translation: "Mum cooks ________ for dinner.",
+    options: ["nasi", "kerusi", "buku", "kasut"],
+    correct: "nasi",
+  },
+  {
+    sentence: "Murid itu menggunakan ________ untuk menulis.",
+    translation: "The student uses ________ to write.",
+    options: ["pensel", "baldi", "topi", "pokok"],
+    correct: "pensel",
+  },
+  {
+    sentence: "Ayah membaca ________ setiap pagi.",
+    translation: "Father reads ________ every morning.",
+    options: ["akhbar", "periuk", "kasut", "bantal"],
+    correct: "akhbar",
+  },
+  {
+    sentence: "Adik minum ________ selepas bersenam.",
+    translation: "Younger sibling drinks ________ after exercising.",
+    options: ["kertas", "air", "meja", "lampu"],
+    correct: "air",
+  },
 ];
 
 function WordBuilderScreen({ onBack }: { onBack: () => void }) {
@@ -535,16 +560,39 @@ function WordBuilderScreen({ onBack }: { onBack: () => void }) {
     setQi((i) => i + 1); setSelected(null); setState("idle");
   };
 
+  const displaySentence = state === "confirmed" && selected
+    ? q.sentence.replace("________", selected)
+    : q.sentence;
+
   return (
     <div className="flex flex-col h-full" style={{ background: "#f5f7fa" }}>
       <QuestionProgressBar current={qi + 1} total={WORD_BUILDER_QS.length} onBack={onBack} title="Word Builder" />
       <div className="flex-1 overflow-y-auto px-4 py-5 scrollbar-hide">
-        <div className="bg-white rounded-2xl p-4 mb-4 flex items-start gap-3" style={{ boxShadow: "0 2px 12px rgba(27,58,107,0.08)" }}>
-          <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "#e8edf5" }}>
-            <BookOpen size={16} style={{ color: "#1B3A6B" }} />
-          </div>
-          <p className="font-bold text-gray-900 text-sm leading-snug pt-1">{q.q}</p>
+        <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: "#1B3A6B" }}>Fill in the blank</p>
+        {/* Sentence card */}
+        <div className="bg-white rounded-2xl p-4 mb-1.5" style={{ boxShadow: "0 2px 12px rgba(27,58,107,0.08)", border: "2px solid #1B3A6B" }}>
+          <p className="font-bold text-gray-900 text-base leading-relaxed">
+            {q.sentence.split("________").map((part, i, arr) => (
+              <span key={i}>
+                {part}
+                {i < arr.length - 1 && (
+                  <span
+                    className="inline-block px-2 rounded-md mx-0.5 font-extrabold"
+                    style={{
+                      background: state === "confirmed" ? (selected === q.correct ? "#4CAF50" : "#F44336") : "#e8edf5",
+                      color: state === "confirmed" ? "#fff" : selected ? "#1B3A6B" : "#9ca3af",
+                      minWidth: 80,
+                      textAlign: "center",
+                    }}
+                  >
+                    {selected ?? "________"}
+                  </span>
+                )}
+              </span>
+            ))}
+          </p>
         </div>
+        <p className="text-xs italic text-gray-400 mb-4 px-1">{q.translation}</p>
         <MCQButtons options={q.options} correct={q.correct} selected={selected} state={state} onSelect={handleSelect} />
       </div>
       <ConfirmBar state={state} isCorrect={selected === q.correct} onConfirm={handleConfirm} onNext={handleNext} correct={q.correct} />
@@ -703,18 +751,43 @@ function SpeedTypingScreen({ onBack }: { onBack: () => void }) {
   const [input, setInput] = useState("");
   const [focused, setFocused] = useState(false);
   const [checked, setChecked] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(10);
+  const [expired, setExpired] = useState(false);
   const q = TYPING_QS[qi];
   const isCorrect = input.trim().toLowerCase() === q.answer;
+
+  useEffect(() => {
+    if (checked || expired) return;
+    if (timeLeft === 0) { setExpired(true); setChecked(true); return; }
+    const t = setTimeout(() => setTimeLeft((s) => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [timeLeft, checked, expired]);
 
   const handleCheck = () => { if (input.trim()) setChecked(true); };
   const handleNext = () => {
     if (qi + 1 >= TYPING_QS.length) { onBack(); return; }
-    setQi((i) => i + 1); setInput(""); setChecked(false);
+    setQi((i) => i + 1); setInput(""); setChecked(false); setTimeLeft(10); setExpired(false);
   };
+
+  const timerColor = timeLeft <= 3 ? "#F44336" : timeLeft <= 6 ? "#f97316" : "#1B3A6B";
+  const timerPct = (timeLeft / 10) * 100;
 
   return (
     <div className="flex flex-col h-full" style={{ background: "#f5f7fa" }}>
       <QuestionProgressBar current={qi + 1} total={TYPING_QS.length} onBack={onBack} title="Speed Typing" />
+      {/* Timer bar */}
+      <div className="px-4 pt-3 pb-1 bg-white border-b border-border flex-shrink-0">
+        <div className="flex items-center justify-between mb-1.5">
+          <span className="text-xs font-semibold text-gray-400">Time remaining</span>
+          <span className="text-sm font-extrabold tabular-nums" style={{ color: timerColor }}>{timeLeft}s</span>
+        </div>
+        <div className="h-2 w-full rounded-full overflow-hidden" style={{ background: "#e8edf5" }}>
+          <div
+            className="h-full rounded-full transition-all"
+            style={{ width: `${timerPct}%`, background: timerColor }}
+          />
+        </div>
+      </div>
       <div className="flex-1 overflow-y-auto px-4 py-5 scrollbar-hide">
         <div className="bg-white rounded-2xl p-4 mb-5 flex items-start gap-3" style={{ boxShadow: "0 2px 12px rgba(27,58,107,0.08)" }}>
           <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "#e8edf5" }}>
@@ -752,12 +825,12 @@ function SpeedTypingScreen({ onBack }: { onBack: () => void }) {
 
         <button
           onClick={checked ? handleNext : handleCheck}
-          disabled={!input.trim()}
+          disabled={!input.trim() && !expired}
           className="w-full py-3.5 rounded-xl font-bold text-sm text-white transition-all hover:opacity-90"
           style={{
-            background: !input.trim() ? "#e5e7eb" : checked ? (isCorrect ? "#4CAF50" : "#1B3A6B") : "#1B3A6B",
-            color: !input.trim() ? "#9ca3af" : "#ffffff",
-            boxShadow: input.trim() ? "0 2px 10px rgba(27,58,107,0.25)" : "none",
+            background: (!input.trim() && !expired) ? "#e5e7eb" : checked ? (isCorrect && !expired ? "#4CAF50" : "#1B3A6B") : "#1B3A6B",
+            color: (!input.trim() && !expired) ? "#9ca3af" : "#ffffff",
+            boxShadow: (input.trim() || expired) ? "0 2px 10px rgba(27,58,107,0.25)" : "none",
           }}
         >
           {checked ? "Next →" : "Check Answer"}
